@@ -1,8 +1,8 @@
 {
-    "name": "sylius/plugin-skeleton",
+    "name": "sylius/ldap-plugin",
     "type": "sylius-plugin",
     "keywords": ["sylius", "sylius-plugin"],
-    "description": "Acme example plugin for Sylius.",
+    "description": "Plugin to integrate with LDAP authentification.",
     "license": "MIT",
     "require": {
         "php": "^7.2",
@@ -44,8 +44,8 @@
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
-            "Acme\\SyliusExamplePlugin\\": "src/",
-            "Tests\\Acme\\SyliusExamplePlugin\\": "tests/"
+            "Brille24\\SyliusLdapPlugin\\": "src/",
+            "Brille24\\SyliusLdapPlugin\\Tests\\": "tests/"
         }
     },
     "autoload-dev": {
