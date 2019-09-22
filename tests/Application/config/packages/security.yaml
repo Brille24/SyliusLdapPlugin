@@ -4,11 +4,14 @@ parameters:
     sylius.security.shop_regex: "^/(?!admin|api/.*|api$|media/.*)[^/]++"
 
 security:
+    erase_credentials: false
     providers:
         sylius_admin_user_provider:
             id: sylius.admin_user_provider.email_or_name_based
         sylius_shop_user_provider:
             id: sylius.shop_user_provider.email_or_name_based
+        brille24_ldap_admin_user_provider:
+            id: sylius_ldap.user_provider.ldap_as_admin_user
     encoders:
         Sylius\Component\User\Model\UserInterface: sha512
     firewalls:
@@ -16,9 +19,9 @@ security:
             switch_user: true
             context: admin
             pattern: "%sylius.security.admin_regex%"
-            provider: sylius_admin_user_provider
-            form_login:
-                provider: sylius_admin_user_provider
+            provider: brille24_ldap_admin_user_provider
+            form_login_ldap:
+                provider: brille24_ldap_admin_user_provider
                 login_path: sylius_admin_login
                 check_path: sylius_admin_login_check
                 failure_path: sylius_admin_login
@@ -28,6 +31,9 @@ security:
                 csrf_token_generator: security.csrf.token_manager
                 csrf_parameter: _csrf_admin_security_token
                 csrf_token_id: admin_authenticate
+                service: Symfony\Component\Ldap\Ldap
+                dn_string: "%env(LDAP_USER_QUERY_DN)%"
+                query_string: "%env(LDAP_QUERY_STRING)%"
             remember_me:
                 secret: "%env(APP_SECRET)%"
                 path: /admin

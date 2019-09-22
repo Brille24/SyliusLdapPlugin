@@ -12,6 +12,8 @@
 
 namespace Brille24\SyliusLdapPlugin;
 
+use Symfony\Component\Ldap\LdapInterface;
+
 interface LdapEndpointInterface
 {
 
@@ -32,5 +34,11 @@ interface LdapEndpointInterface
     public function optReferrals(): bool;
 
     public function options(): array;
+
+    public function distinguishedName(): string;
+
+    public function password(): string;
+
+    public function createLdap(): LdapInterface;
 
 }
