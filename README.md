@@ -54,3 +54,9 @@ LDAP_LOOKUP_DN='cn=lookup-user,dc=example,dc=com'
 LDAP_USER_QUERY_DN='dc=example,dc=com'
 ###< sylius/ldap-plugin ###
 ```
+
+## Origin / Other Sources
+
+This plugin is the result of the third sylius hackathon in oldenburg at brille24. It is based on `symfony/ldap`, so any guide for that package may also help you:
+* [Ldap component](https://symfony.com/components/Ldap)
+* [Authenticating against an LDAP server](https://symfony.com/doc/current/security/ldap.html)
