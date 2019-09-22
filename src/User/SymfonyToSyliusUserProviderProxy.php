@@ -129,8 +129,9 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $syliusUser = new AdminUser();
         $syliusUser->setUsername($symfonyUser->getUsername());
         $syliusUser->setEmail($ldapAttributes['email']);
-        $syliusUser->setLocked((bool)$ldapAttributes['locked']);
-        $syliusUser->setExpiresAt($ldapAttributes['expires_at']);
+        $syliusUser->setLocked($ldapAttributes['locked']);
+#        $syliusUser->setExpiresAt($ldapAttributes['expires_at']);
+        $syliusUser->setEnabled(!$ldapAttributes['locked']);
         $syliusUser->setLastLogin($ldapAttributes['last_login']);
         $syliusUser->setVerifiedAt($ldapAttributes['verified_at']);
         $syliusUser->setEmailCanonical($ldapAttributes['email_canonical']);
@@ -151,8 +152,9 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         SyliusUserInterface $targetUser
     ) {
         $targetUser->setEmail($sourceUser->getEmail());
-        $targetUser->setLocked(!$sourceUser->isAccountNonLocked());
-        $targetUser->setExpiresAt($sourceUser->getExpiresAt());
+        $targetUser->setLocked(false);
+#        $targetUser->setExpiresAt($sourceUser->getExpiresAt());
+        $targetUser->setEnabled($sourceUser->isEnabled());
         $targetUser->setLastLogin($sourceUser->getLastLogin());
         $targetUser->setVerifiedAt($sourceUser->getVerifiedAt());
         $targetUser->setEmailCanonical($sourceUser->getEmailCanonical());
@@ -180,7 +182,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         /** @var array<string, string> $userAttributes */
         $userAttributes = array(
             'email' => null,
-            'locked' => null,
+            'locked' => false,
             'username' => null,
             'expires_at' => null,
             'last_login' => null,
