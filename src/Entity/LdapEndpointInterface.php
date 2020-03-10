@@ -10,7 +10,7 @@
  * @author Gerrit Addiks <gerrit.addiks@brille24.de>
  */
 
-namespace Brille24\SyliusLdapPlugin;
+namespace Brille24\SyliusLdapPlugin\Entity;
 
 use Symfony\Component\Ldap\LdapInterface;
 
