@@ -7,7 +7,7 @@
     "require": {
         "php": "^7.2",
 
-        "sylius/sylius": "^1.4",
+        "sylius/sylius": "^1.7",
         "symfony/ldap": "^4.3"
     },
     "require-dev": {
