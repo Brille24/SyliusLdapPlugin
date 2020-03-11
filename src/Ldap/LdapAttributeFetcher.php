@@ -8,12 +8,13 @@ use DateTimeInterface;
 use Symfony\Component\Ldap\Adapter\QueryInterface;
 use Symfony\Component\Ldap\Entry;
 use Symfony\Component\Ldap\Ldap;
+use Symfony\Component\Ldap\LdapInterface;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
 use Webmozart\Assert\Assert;
 
 final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
 {
-    /** @var Ldap */
+    /** @var LdapInterface */
     private $ldap;
 
     /** @var array */
@@ -23,12 +24,12 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
     private $dn;
 
     /**
-     * @param Ldap                  $ldap
+     * @param LdapInterface         $ldap
      * @param array<string, string> $attributeMapping
      * @param string                $dn
      */
     public function __construct(
-        Ldap $ldap,
+        LdapInterface $ldap,
         array $attributeMapping = [],
         string $dn = 'ou=users,dc=example,dc=com'
     ) {
@@ -59,8 +60,8 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
             'email_canonical'       => null,
             'username_canonical'    => null,
             'credentials_expire_at' => null,
-            'last_name'             => null,
             'first_name'            => null,
+            'last_name'             => null,
             'locale_code'           => null,
         ];
 
