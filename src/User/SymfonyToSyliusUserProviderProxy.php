@@ -13,30 +13,28 @@
 namespace Brille24\SyliusLdapPlugin\User;
 
 use Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcherInterface;
+use Sylius\Bundle\UserBundle\Provider\AbstractUserProvider;
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
-use Symfony\Component\Security\Core\Exception\DisabledException;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
 use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
 use Sylius\Component\Core\Model\AdminUser;
-use Doctrine\Common\Persistence\ObjectRepository;
 use Webmozart\Assert\Assert;
 use Sylius\Component\Core\Model\AdminUserInterface;
 
 final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterface
 {
-
     /**
      * @var SymfonyUserProviderInterface
      */
     private $innerUserProvider;
 
     /**
-     * @var ObjectRepository<AdminUser>
+     * @var AbstractUserProvider
      */
-    private $userRepository;
+    private $adminUserProvider;
 
     /**
      * @var LdapAttributeFetcherInterface
@@ -50,27 +48,32 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
 
     public function __construct(
         SymfonyUserProviderInterface $innerUserProvider,
-        ObjectRepository $userRepository,
+        AbstractUserProvider $adminUserProvider,
         PropertyAccessorInterface $propertyAccessor,
         LdapAttributeFetcherInterface $attributeFetcher
     ) {
-        Assert::eq(AdminUser::class, $userRepository->getClassName());
-
         $this->innerUserProvider = $innerUserProvider;
-        $this->userRepository = $userRepository;
+        $this->adminUserProvider = $adminUserProvider;
         $this->attributeFetcher = $attributeFetcher;
         $this->propertyAccessor = $propertyAccessor;
     }
 
     public function loadUserByUsername($username)
     {
-        /** @var SyliusUserInterface|null $syliusUser */
-        $syliusUser = $this->userRepository->findOneBy(['username' => $username]);
+        /** @var SyliusUserInterface $syliusUser */
+        try {
+            $syliusUser = $this->adminUserProvider->loadUserByUsername($username);
+        }catch (UsernameNotFoundException $notFoundException) {
+            $syliusUser = null;
+        }
 
         /** @var SymfonyUserInterface|null $symfonyLdapUser */
         try {
             $symfonyLdapUser = $this->innerUserProvider->loadUserByUsername($username);
         } catch (UsernameNotFoundException $notFoundException) {
+            if ($syliusUser === null) {
+                throw new UsernameNotFoundException('User is not available in LDAP');
+            }
             $symfonyLdapUser = null;
         }
 
@@ -81,9 +84,11 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
             $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
         }
 
+        // If Sylius does not have any user, then just take the one converted from LDAP
         if (is_null($syliusUser)) {
             $syliusUser = $syliusLdapUser;
 
+        // If both systems have the user, synchronise the Sylius user with the LDAP Info
         } elseif (is_object($syliusLdapUser)) {
             $this->synchroniseUsers($syliusLdapUser, $syliusUser);
         }
@@ -151,6 +156,8 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
             'email',
             'expiresAt',
             'lastLogin',
+            'locked',
+            'enabled',
             'verifiedAt',
             'emailCanonical',
             'username',
@@ -159,9 +166,9 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         ];
 
         if ($targetUser instanceof AdminUserInterface && $sourceUser instanceof AdminUserInterface) {
-            $attributeToSync[] = 'lastName';
-            $attributeToSync[] = 'firstName';
-            $attributeToSync[] = 'localeCode';
+            $attributesToSync[] = 'lastName';
+            $attributesToSync[] = 'firstName';
+            $attributesToSync[] = 'localeCode';
         }
 
         foreach($attributesToSync as $attributeToSync) {
