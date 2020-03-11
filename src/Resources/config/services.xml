@@ -15,6 +15,18 @@
             />
         </service>
 -->
+        <service
+            id="sylius_ldap.ldap.ldap_attribute_fetcher"
+            class="Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcher">
+            <argument type="service" id="Symfony\Component\Ldap\Ldap" />
+            <argument type="collection">
+                <!-- Enter attribute mapping here: -->
+                <argument key="first_name">givenName</argument>
+                <argument key="last_name">sn</argument>
+                <argument key="email">mail</argument>
+            </argument>
+            <argument>%env(LDAP_USER_QUERY_DN)%</argument>
+        </service>
 
         <service
             id="sylius_ldap.user_provider.ldap_as_admin_user"
@@ -33,14 +45,7 @@
                 </service>
             </argument>
             <argument type="service" id="sylius.repository.admin_user" />
-            <argument type="service" id="Symfony\Component\Ldap\Ldap" />
-            <argument type="collection">
-                <!-- Enter attribute mapping here: -->
-                <argument key="first_name">givenName</argument>
-                <argument key="last_name">sn</argument>
-                <argument key="email">mail</argument>
-            </argument>
-            <argument>%env(LDAP_USER_QUERY_DN)%</argument>
+            <argument type="service" id="sylius_ldap.ldap.ldap_attribute_fetcher" />
         </service>
 
         <service id="Symfony\Component\Ldap\Ldap">

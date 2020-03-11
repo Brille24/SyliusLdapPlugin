@@ -12,16 +12,14 @@
 
 namespace Brille24\SyliusLdapPlugin\User;
 
+use Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcher;
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
-use Symfony\Component\Ldap\LdapInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
 use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
 use Sylius\Component\Core\Model\AdminUser;
 use Doctrine\Common\Persistence\ObjectRepository;
 use Webmozart\Assert\Assert;
-use Symfony\Component\Ldap\Entry;
-use Symfony\Component\Ldap\Adapter\QueryInterface;
 use Sylius\Component\Core\Model\AdminUserInterface;
 
 final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterface
@@ -33,42 +31,25 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     private $innerUserProvider;
 
     /**
-     * @var array<string, string>
-     */
-    private $attributeMapping;
-
-    /**
      * @var ObjectRepository<AdminUser>
      */
     private $userRepository;
 
     /**
-     * @var LdapInterface
+     * @var LdapAttributeFetcher
      */
-    private $ldap;
+    private $attributeFetcher;
 
-    /**
-     * @var string
-     */
-    private $dn;
-
-    /**
-     * @var array<string, string>
-     */
     public function __construct(
         SymfonyUserProviderInterface $innerUserProvider,
         ObjectRepository $userRepository,
-        LdapInterface $ldap,
-        array $attributeMapping = array(),
-        string $dn = "ou=users,dc=example,dc=com"
+        LdapAttributeFetcher $attributeFetcher
     ) {
         Assert::eq(AdminUser::class, $userRepository->getClassName());
 
         $this->innerUserProvider = $innerUserProvider;
-        $this->attributeMapping = $attributeMapping;
         $this->userRepository = $userRepository;
-        $this->ldap = $ldap;
-        $this->dn = $dn;
+        $this->attributeFetcher = $attributeFetcher;
     }
 
     public function loadUserByUsername($username)
@@ -116,7 +97,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         return $user;
     }
 
-    public function supportsClass($class)
+    public function supportsClass($class): bool
     {
         return $this->innerUserProvider->supportsClass($class);
     }
@@ -124,19 +105,20 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     private function convertSymfonyToSyliusUser(SymfonyUserInterface $symfonyUser): SyliusUserInterface
     {
         /** @var array<string, string> $ldapAttributes */
-        $ldapAttributes = $this->fetchLdapAttributesForUser($symfonyUser);
+        $ldapAttributes = $this->attributeFetcher->fetchAttributesForUser($symfonyUser);
 
+        $locked = $this->attributeFetcher->toBool($ldapAttributes['locked']);
         $syliusUser = new AdminUser();
         $syliusUser->setUsername($symfonyUser->getUsername());
         $syliusUser->setEmail($ldapAttributes['email']);
-        $syliusUser->setLocked($ldapAttributes['locked']);
+        $syliusUser->setLocked($locked);
+        $syliusUser->setEnabled(!$locked);
 #        $syliusUser->setExpiresAt($ldapAttributes['expires_at']);
-        $syliusUser->setEnabled(!$ldapAttributes['locked']);
-        $syliusUser->setLastLogin($ldapAttributes['last_login']);
-        $syliusUser->setVerifiedAt($ldapAttributes['verified_at']);
+        $syliusUser->setLastLogin($this->attributeFetcher->toDateTime($ldapAttributes['last_login']));
+        $syliusUser->setVerifiedAt($this->attributeFetcher->toDateTime($ldapAttributes['verified_at']));
         $syliusUser->setEmailCanonical($ldapAttributes['email_canonical']);
         $syliusUser->setUsernameCanonical($ldapAttributes['username_canonical']);
-        $syliusUser->setCredentialsExpireAt($ldapAttributes['credentials_expire_at']);
+        $syliusUser->setCredentialsExpireAt($this->attributeFetcher->toDateTime($ldapAttributes['credentials_expire_at']));
 
         if ($syliusUser instanceof AdminUserInterface) {
             $syliusUser->setLastName($ldapAttributes['last_name']);
@@ -166,51 +148,5 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
             $targetUser->setFirstName($sourceUser->getFirstName());
             $targetUser->setLocaleCode($sourceUser->getLocaleCode());
         }
-    }
-
-    private function fetchLdapAttributesForUser(SymfonyUserInterface $user): array
-    {
-        /** @var string $query */
-        $query = sprintf("uid=%s", $user->getUsername());
-
-        /** @var QueryInterface $search */
-        $search = $this->ldap->query($this->dn, $query);
-
-        /** @var iterable<Entry> $entries */
-        $entries = $search->execute();
-
-        /** @var array<string, string> $userAttributes */
-        $userAttributes = array(
-            'email' => null,
-            'locked' => false,
-            'username' => null,
-            'expires_at' => null,
-            'last_login' => null,
-            'verified_at' => null,
-            'email_canonical' => null,
-            'username_canonical' => null,
-            'credentials_expire_at' => null,
-            'last_name' => null,
-            'first_name' => null,
-            'locale_code' => null,
-        );
-
-        if (count($entries) >= 1) {
-            /** @var Entry $entry */
-            $entry = $entries[0];
-
-            foreach ($this->attributeMapping as $userKey => $ldapKey) {
-                Assert::keyExists($userAttributes, $userKey, sprintf("Unknown key '%s'!", $userKey));
-
-                if ($entry->hasAttribute($ldapKey)) {
-                    /** @var array<string> $value */
-                    $value = array_values($entry->getAttribute($ldapKey));
-
-                    $userAttributes[$userKey] = (string)$value[0];
-                }
-            }
-        }
-
-        return $userAttributes;
     }
 }

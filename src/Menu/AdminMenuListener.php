@@ -17,7 +17,6 @@ use Knp\Menu\ItemInterface;
 
 final class AdminMenuListener
 {
-
     public function addAdminMenuItems(MenuBuilderEvent $event)
     {
         /** @var ItemInterface $menu */
