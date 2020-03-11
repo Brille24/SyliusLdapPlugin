@@ -61,8 +61,8 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
 
     public function loadUserByUsername($username)
     {
-        /** @var SyliusUserInterface $syliusUser */
         try {
+            /** @var SyliusUserInterface $syliusUser */
             $syliusUser = $this->adminUserProvider->loadUserByUsername($username);
         } catch (UsernameNotFoundException $notFoundException) {
             $syliusUser = null;

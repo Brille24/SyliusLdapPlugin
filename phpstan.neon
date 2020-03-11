@@ -4,6 +4,7 @@ includes:
 
 parameters:
     reportUnmatchedIgnoredErrors: false
+    level: max
 
     excludes_analyse:
         # Makes PHPStan crash
