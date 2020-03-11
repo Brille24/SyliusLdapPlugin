@@ -33,6 +33,7 @@
                 </service>
             </argument>
             <argument type="service" id="sylius.repository.admin_user" />
+            <argument type="service" id="property_accessor" />
             <argument type="service" id="sylius_ldap.ldap.ldap_attribute_fetcher" />
         </service>
 

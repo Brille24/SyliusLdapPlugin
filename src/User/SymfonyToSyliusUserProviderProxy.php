@@ -14,6 +14,8 @@ namespace Brille24\SyliusLdapPlugin\User;
 
 use Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcherInterface;
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
+use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
+use Symfony\Component\Security\Core\Exception\DisabledException;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
@@ -41,9 +43,15 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
      */
     private $attributeFetcher;
 
+    /**
+     * @var PropertyAccessorInterface
+     */
+    private $propertyAccessor;
+
     public function __construct(
         SymfonyUserProviderInterface $innerUserProvider,
         ObjectRepository $userRepository,
+        PropertyAccessorInterface $propertyAccessor,
         LdapAttributeFetcherInterface $attributeFetcher
     ) {
         Assert::eq(AdminUser::class, $userRepository->getClassName());
@@ -51,15 +59,13 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $this->innerUserProvider = $innerUserProvider;
         $this->userRepository = $userRepository;
         $this->attributeFetcher = $attributeFetcher;
+        $this->propertyAccessor = $propertyAccessor;
     }
 
     public function loadUserByUsername($username)
     {
         /** @var SyliusUserInterface|null $syliusUser */
         $syliusUser = $this->userRepository->findOneBy(['username' => $username]);
-        if($syliusUser instanceof SyliusUserInterface && !$syliusUser->isEnabled()) {
-            throw new UsernameNotFoundException('The current user is deactivated');
-        }
 
         /** @var SymfonyUserInterface|null $symfonyLdapUser */
         try {
@@ -140,21 +146,27 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     private function synchroniseUsers(
         SyliusUserInterface $sourceUser,
         SyliusUserInterface $targetUser
-    ) {
-        $targetUser->setEmail($sourceUser->getEmail());
-        $targetUser->setLocked(false);
-#        $targetUser->setExpiresAt($sourceUser->getExpiresAt());
-        $targetUser->setEnabled($sourceUser->isEnabled());
-        $targetUser->setLastLogin($sourceUser->getLastLogin());
-        $targetUser->setVerifiedAt($sourceUser->getVerifiedAt());
-        $targetUser->setEmailCanonical($sourceUser->getEmailCanonical());
-        $targetUser->setUsernameCanonical($sourceUser->getUsernameCanonical());
-        $targetUser->setCredentialsExpireAt($sourceUser->getCredentialsExpireAt());
+    ): void {
+        $attributesToSync = [
+            'email',
+            'expiresAt',
+            'lastLogin',
+            'verifiedAt',
+            'emailCanonical',
+            'username',
+            'usernameCanonical',
+            'credentialsExpireAt'
+        ];
 
         if ($targetUser instanceof AdminUserInterface && $sourceUser instanceof AdminUserInterface) {
-            $targetUser->setLastName($sourceUser->getLastName());
-            $targetUser->setFirstName($sourceUser->getFirstName());
-            $targetUser->setLocaleCode($sourceUser->getLocaleCode());
+            $attributeToSync[] = 'lastName';
+            $attributeToSync[] = 'firstName';
+            $attributeToSync[] = 'localeCode';
+        }
+
+        foreach($attributesToSync as $attributeToSync) {
+            $value = $this->propertyAccessor->getValue($sourceUser, $attributeToSync);
+            $this->propertyAccessor->setValue($targetUser, $attributeToSync, $value);
         }
     }
 }
