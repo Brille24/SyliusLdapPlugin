@@ -2,6 +2,8 @@
 
 <p align="center">Plugin for integrating Sylius with LDAP.</p>
 
+**When using instead of the Sylius form login you will not be able to log in with existing users into Sylius.**
+
 ## Try it before installing
 
 If yo want to see if this plugin works with your LDAP server, you can try it before integrating it into your project.
