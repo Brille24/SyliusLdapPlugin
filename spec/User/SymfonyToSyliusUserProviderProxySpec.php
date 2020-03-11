@@ -39,6 +39,7 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
         SyliusUserInterface $syliusUser
     ): void {
         $userRepository->findOneBy(['username' => 'test'])->willReturn($syliusUser);
+        $syliusUser->isEnabled()->willReturn(true);
 
         $innerUserProvider->loadUserByUsername('test')->willThrow(UsernameNotFoundException::class);
 
@@ -47,6 +48,21 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
         $this->loadUserByUsername('test')->shouldReturn($syliusUser);
     }
 
+    function throws_an_exception_if_the_user_is_deactivated(
+        ObjectRepository $userRepository,
+        UserProviderInterface $innerUserProvider,
+        LdapAttributeFetcherInterface $attributeFetcher,
+        SyliusUserInterface $syliusUser
+    ): void {
+        $userRepository->findOneBy(['username' => 'test'])->willReturn($syliusUser);
+        $syliusUser->isEnabled()->willReturn(false);
+
+        $innerUserProvider->loadUserByUsername('test')->willThrow(UsernameNotFoundException::class);
+
+        $attributeFetcher->fetchAttributesForUser(Argument::any())->shouldNotBeCalled();
+
+        $this->shouldThrow(UsernameNotFoundException::class)->during('loadUserByUsername', ['test']);
+    }
     function it_loads_the_ldap_user_and_creates_a_sylius_user(
         ObjectRepository $userRepository,
         UserProviderInterface $innerUserProvider,
@@ -91,6 +107,7 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
         UserInterface $ldapUser
     ) {
         $userRepository->findOneBy(['username' => 'test'])->willReturn($syliusUser);
+        $syliusUser->isEnabled()->willReturn(true);
 
         $innerUserProvider->loadUserByUsername('test')->willReturn($ldapUser);
 

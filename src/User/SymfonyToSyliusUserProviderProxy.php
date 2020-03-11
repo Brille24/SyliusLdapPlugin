@@ -57,6 +57,9 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     {
         /** @var SyliusUserInterface|null $syliusUser */
         $syliusUser = $this->userRepository->findOneBy(['username' => $username]);
+        if($syliusUser instanceof SyliusUserInterface && !$syliusUser->isEnabled()) {
+            throw new UsernameNotFoundException('The current user is deactivated');
+        }
 
         /** @var SymfonyUserInterface|null $symfonyLdapUser */
         try {
