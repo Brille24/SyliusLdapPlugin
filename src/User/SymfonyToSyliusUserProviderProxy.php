@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /**
  * Copyright (C) 2019 Brille24 GmbH.
  * This package (including this file) was released under the terms of the GPL-3.0.
@@ -6,7 +8,6 @@
  * If not, see <http://www.gnu.org/licenses/> or send me a mail so i can send you a copy.
  *
  * @license GPL-3.0
- *
  * @author Gerrit Addiks <gerrit.addiks@brille24.de>
  */
 
@@ -15,14 +16,14 @@ namespace Brille24\SyliusLdapPlugin\User;
 use Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcherInterface;
 use Sylius\Bundle\UserBundle\Provider\AbstractUserProvider;
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
+use Sylius\Component\Core\Model\AdminUser;
+use Sylius\Component\Core\Model\AdminUserInterface;
+use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
-use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
-use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
-use Sylius\Component\Core\Model\AdminUser;
+use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
 use Webmozart\Assert\Assert;
-use Sylius\Component\Core\Model\AdminUserInterface;
 
 final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterface
 {
@@ -63,7 +64,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         /** @var SyliusUserInterface $syliusUser */
         try {
             $syliusUser = $this->adminUserProvider->loadUserByUsername($username);
-        }catch (UsernameNotFoundException $notFoundException) {
+        } catch (UsernameNotFoundException $notFoundException) {
             $syliusUser = null;
         }
 
@@ -85,7 +86,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         }
 
         // If Sylius does not have any user, then just take the one converted from LDAP
-        if (is_null($syliusUser)) {
+        if (null === $syliusUser) {
             $syliusUser = $syliusLdapUser;
 
         // If both systems have the user, synchronise the Sylius user with the LDAP Info
@@ -107,7 +108,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         if (is_object($symfonyLdapUser)) {
             $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
 
-            # Non-sylius-users (e.g.: symfony-users) are immutable and cannot be updated / synced.
+            // Non-sylius-users (e.g.: symfony-users) are immutable and cannot be updated / synced.
             Assert::isInstanceOf($user, SyliusUserInterface::class);
 
             $this->synchroniseUsers($syliusLdapUser, $user);
@@ -132,7 +133,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $syliusUser->setEmail($ldapAttributes['email']);
         $syliusUser->setLocked($locked);
         $syliusUser->setEnabled(!$locked);
-#        $syliusUser->setExpiresAt($ldapAttributes['expires_at']);
+//        $syliusUser->setExpiresAt($ldapAttributes['expires_at']);
         $syliusUser->setLastLogin($this->attributeFetcher->toDateTime($ldapAttributes['last_login']));
         $syliusUser->setVerifiedAt($this->attributeFetcher->toDateTime($ldapAttributes['verified_at']));
         $syliusUser->setEmailCanonical($ldapAttributes['email_canonical']);
@@ -162,7 +163,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
             'emailCanonical',
             'username',
             'usernameCanonical',
-            'credentialsExpireAt'
+            'credentialsExpireAt',
         ];
 
         if ($targetUser instanceof AdminUserInterface && $sourceUser instanceof AdminUserInterface) {
@@ -171,7 +172,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
             $attributesToSync[] = 'localeCode';
         }
 
-        foreach($attributesToSync as $attributeToSync) {
+        foreach ($attributesToSync as $attributeToSync) {
             $value = $this->propertyAccessor->getValue($sourceUser, $attributeToSync);
             $this->propertyAccessor->setValue($targetUser, $attributeToSync, $value);
         }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Brille24\SyliusLdapPlugin\Ldap;
@@ -51,18 +52,18 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
 
         /** @var array<string, mixed> $userAttributes */
         $userAttributes = [
-            'email'                 => null,
-            'locked'                => false,
-            'username'              => null,
-            'expires_at'            => null,
-            'last_login'            => null,
-            'verified_at'           => null,
-            'email_canonical'       => null,
-            'username_canonical'    => null,
+            'email' => null,
+            'locked' => false,
+            'username' => null,
+            'expires_at' => null,
+            'last_login' => null,
+            'verified_at' => null,
+            'email_canonical' => null,
+            'username_canonical' => null,
             'credentials_expire_at' => null,
-            'first_name'            => null,
-            'last_name'             => null,
-            'locale_code'           => null,
+            'first_name' => null,
+            'last_name' => null,
+            'locale_code' => null,
         ];
 
         if (count($entries) >= 1) {
@@ -93,13 +94,14 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
         return $value === '1';
     }
 
-    public function toDateTime($value): ?DateTimeInterface {
-        if($value === null) {
+    public function toDateTime($value): ?DateTimeInterface
+    {
+        if ($value === null) {
             return null;
         }
 
         $dateTime = DateTime::createFromFormat(DATE_ATOM, $value);
-        if($dateTime === false) {
+        if ($dateTime === false) {
             return null;
         }
 
