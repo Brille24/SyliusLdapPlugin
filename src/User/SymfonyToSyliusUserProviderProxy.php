@@ -13,13 +13,13 @@
 namespace Brille24\SyliusLdapPlugin\User;
 
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
+use Symfony\Component\Ldap\LdapInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
 use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
 use Sylius\Component\Core\Model\AdminUser;
 use Doctrine\Common\Persistence\ObjectRepository;
 use Webmozart\Assert\Assert;
-use Symfony\Component\Ldap\Ldap;
 use Symfony\Component\Ldap\Entry;
 use Symfony\Component\Ldap\Adapter\QueryInterface;
 use Sylius\Component\Core\Model\AdminUserInterface;
@@ -43,7 +43,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     private $userRepository;
 
     /**
-     * @var Ldap
+     * @var LdapInterface
      */
     private $ldap;
 
@@ -58,7 +58,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     public function __construct(
         SymfonyUserProviderInterface $innerUserProvider,
         ObjectRepository $userRepository,
-        Ldap $ldap,
+        LdapInterface $ldap,
         array $attributeMapping = array(),
         string $dn = "ou=users,dc=example,dc=com"
     ) {
