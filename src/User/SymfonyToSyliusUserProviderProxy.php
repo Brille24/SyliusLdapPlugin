@@ -12,8 +12,9 @@
 
 namespace Brille24\SyliusLdapPlugin\User;
 
-use Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcher;
+use Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcherInterface;
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
+use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
 use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
@@ -36,14 +37,14 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     private $userRepository;
 
     /**
-     * @var LdapAttributeFetcher
+     * @var LdapAttributeFetcherInterface
      */
     private $attributeFetcher;
 
     public function __construct(
         SymfonyUserProviderInterface $innerUserProvider,
         ObjectRepository $userRepository,
-        LdapAttributeFetcher $attributeFetcher
+        LdapAttributeFetcherInterface $attributeFetcher
     ) {
         Assert::eq(AdminUser::class, $userRepository->getClassName());
 
@@ -58,7 +59,11 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $syliusUser = $this->userRepository->findOneBy(['username' => $username]);
 
         /** @var SymfonyUserInterface|null $symfonyLdapUser */
-        $symfonyLdapUser = $this->innerUserProvider->loadUserByUsername($username);
+        try {
+            $symfonyLdapUser = $this->innerUserProvider->loadUserByUsername($username);
+        } catch (UsernameNotFoundException $notFoundException) {
+            $symfonyLdapUser = null;
+        }
 
         /** @var SyliusUserInterface $syliusLdapUser */
         $syliusLdapUser = null;
@@ -77,7 +82,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         return $syliusUser;
     }
 
-    public function refreshUser(SymfonyUserInterface $user)
+    public function refreshUser(SymfonyUserInterface $user): SymfonyUserInterface
     {
         /** @var SymfonyUserInterface|null $symfonyLdapUser */
         $symfonyLdapUser = $this->innerUserProvider->refreshUser($user);

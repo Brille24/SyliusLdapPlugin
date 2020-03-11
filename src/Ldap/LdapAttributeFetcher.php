@@ -11,7 +11,7 @@ use Symfony\Component\Ldap\Ldap;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
 use Webmozart\Assert\Assert;
 
-final class LdapAttributeFetcher
+final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
 {
     /** @var Ldap */
     private $ldap;
@@ -29,7 +29,7 @@ final class LdapAttributeFetcher
      */
     public function __construct(
         Ldap $ldap,
-        array $attributeMapping = array(),
+        array $attributeMapping = [],
         string $dn = 'ou=users,dc=example,dc=com'
     ) {
         $this->ldap = $ldap;
@@ -49,7 +49,7 @@ final class LdapAttributeFetcher
         $entries = $search->execute()->toArray();
 
         /** @var array<string, mixed> $userAttributes */
-        $userAttributes = array(
+        $userAttributes = [
             'email'                 => null,
             'locked'                => false,
             'username'              => null,
@@ -62,7 +62,7 @@ final class LdapAttributeFetcher
             'last_name'             => null,
             'first_name'            => null,
             'locale_code'           => null,
-        );
+        ];
 
         if (count($entries) >= 1) {
             /** @var Entry $entry */
