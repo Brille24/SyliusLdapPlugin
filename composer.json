@@ -1,5 +1,5 @@
 {
-    "name": "sylius/ldap-plugin",
+    "name": "brille24/sylius-ldap-plugin",
     "type": "sylius-plugin",
     "keywords": ["sylius", "sylius-plugin"],
     "description": "Plugin to integrate with LDAP authentification.",

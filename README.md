@@ -37,7 +37,7 @@ The server is now running, you can reach it at [http://127.0.0.1:8000/admin/](ht
     
 ## Installation
 
-Run `composer require sylius/ldap-plugin` in your project-root.
+Run `composer require brille24/sylius-ldap-plugin` in your project-root.
 
 ## Configuration
 
