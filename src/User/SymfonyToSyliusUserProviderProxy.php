@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /**
  * Copyright (C) 2019 Brille24 GmbH.
  * This package (including this file) was released under the terms of the GPL-3.0.
@@ -6,78 +8,75 @@
  * If not, see <http://www.gnu.org/licenses/> or send me a mail so i can send you a copy.
  *
  * @license GPL-3.0
- *
  * @author Gerrit Addiks <gerrit.addiks@brille24.de>
  */
 
 namespace Brille24\SyliusLdapPlugin\User;
 
+use Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcherInterface;
+use Sylius\Bundle\UserBundle\Provider\AbstractUserProvider;
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
-use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
-use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
-use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
 use Sylius\Component\Core\Model\AdminUser;
-use Doctrine\Common\Persistence\ObjectRepository;
-use Webmozart\Assert\Assert;
-use Symfony\Component\Ldap\Ldap;
-use Symfony\Component\Ldap\Entry;
-use Symfony\Component\Ldap\Adapter\QueryInterface;
 use Sylius\Component\Core\Model\AdminUserInterface;
+use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
+use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
+use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
+use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
+use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
+use Webmozart\Assert\Assert;
 
 final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterface
 {
-
     /**
      * @var SymfonyUserProviderInterface
      */
     private $innerUserProvider;
 
     /**
-     * @var array<string, string>
+     * @var AbstractUserProvider
      */
-    private $attributeMapping;
+    private $adminUserProvider;
 
     /**
-     * @var ObjectRepository<AdminUser>
+     * @var LdapAttributeFetcherInterface
      */
-    private $userRepository;
+    private $attributeFetcher;
 
     /**
-     * @var Ldap
+     * @var PropertyAccessorInterface
      */
-    private $ldap;
+    private $propertyAccessor;
 
-    /**
-     * @var string
-     */
-    private $dn;
-
-    /**
-     * @var array<string, string>
-     */
     public function __construct(
         SymfonyUserProviderInterface $innerUserProvider,
-        ObjectRepository $userRepository,
-        Ldap $ldap,
-        array $attributeMapping = array(),
-        string $dn = "ou=users,dc=example,dc=com"
+        AbstractUserProvider $adminUserProvider,
+        PropertyAccessorInterface $propertyAccessor,
+        LdapAttributeFetcherInterface $attributeFetcher
     ) {
-        Assert::eq(AdminUser::class, $userRepository->getClassName());
-
         $this->innerUserProvider = $innerUserProvider;
-        $this->attributeMapping = $attributeMapping;
-        $this->userRepository = $userRepository;
-        $this->ldap = $ldap;
-        $this->dn = $dn;
+        $this->adminUserProvider = $adminUserProvider;
+        $this->attributeFetcher = $attributeFetcher;
+        $this->propertyAccessor = $propertyAccessor;
     }
 
     public function loadUserByUsername($username)
     {
-        /** @var SyliusUserInterface|null $syliusUser */
-        $syliusUser = $this->userRepository->findOneBy(['username' => $username]);
+        try {
+            /** @var SyliusUserInterface $syliusUser */
+            $syliusUser = $this->adminUserProvider->loadUserByUsername($username);
+        } catch (UsernameNotFoundException $notFoundException) {
+            $syliusUser = null;
+        }
 
         /** @var SymfonyUserInterface|null $symfonyLdapUser */
-        $symfonyLdapUser = $this->innerUserProvider->loadUserByUsername($username);
+        try {
+            $symfonyLdapUser = $this->innerUserProvider->loadUserByUsername($username);
+        } catch (UsernameNotFoundException $notFoundException) {
+            if ($syliusUser === null) {
+                throw new UsernameNotFoundException('User is not available in LDAP');
+            }
+            $symfonyLdapUser = null;
+        }
 
         /** @var SyliusUserInterface $syliusLdapUser */
         $syliusLdapUser = null;
@@ -86,9 +85,11 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
             $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
         }
 
-        if (is_null($syliusUser)) {
+        // If Sylius does not have any user, then just take the one converted from LDAP
+        if (null === $syliusUser) {
             $syliusUser = $syliusLdapUser;
 
+        // If both systems have the user, synchronise the Sylius user with the LDAP Info
         } elseif (is_object($syliusLdapUser)) {
             $this->synchroniseUsers($syliusLdapUser, $syliusUser);
         }
@@ -96,7 +97,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         return $syliusUser;
     }
 
-    public function refreshUser(SymfonyUserInterface $user)
+    public function refreshUser(SymfonyUserInterface $user): SymfonyUserInterface
     {
         /** @var SymfonyUserInterface|null $symfonyLdapUser */
         $symfonyLdapUser = $this->innerUserProvider->refreshUser($user);
@@ -107,7 +108,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         if (is_object($symfonyLdapUser)) {
             $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
 
-            # Non-sylius-users (e.g.: symfony-users) are immutable and cannot be updated / synced.
+            // Non-sylius-users (e.g.: symfony-users) are immutable and cannot be updated / synced.
             Assert::isInstanceOf($user, SyliusUserInterface::class);
 
             $this->synchroniseUsers($syliusLdapUser, $user);
@@ -116,7 +117,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         return $user;
     }
 
-    public function supportsClass($class)
+    public function supportsClass($class): bool
     {
         return $this->innerUserProvider->supportsClass($class);
     }
@@ -124,19 +125,20 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     private function convertSymfonyToSyliusUser(SymfonyUserInterface $symfonyUser): SyliusUserInterface
     {
         /** @var array<string, string> $ldapAttributes */
-        $ldapAttributes = $this->fetchLdapAttributesForUser($symfonyUser);
+        $ldapAttributes = $this->attributeFetcher->fetchAttributesForUser($symfonyUser);
 
+        $locked = $this->attributeFetcher->toBool($ldapAttributes['locked']);
         $syliusUser = new AdminUser();
         $syliusUser->setUsername($symfonyUser->getUsername());
         $syliusUser->setEmail($ldapAttributes['email']);
-        $syliusUser->setLocked($ldapAttributes['locked']);
-#        $syliusUser->setExpiresAt($ldapAttributes['expires_at']);
-        $syliusUser->setEnabled(!$ldapAttributes['locked']);
-        $syliusUser->setLastLogin($ldapAttributes['last_login']);
-        $syliusUser->setVerifiedAt($ldapAttributes['verified_at']);
+        $syliusUser->setLocked($locked);
+        $syliusUser->setEnabled(!$locked);
+//        $syliusUser->setExpiresAt($ldapAttributes['expires_at']);
+        $syliusUser->setLastLogin($this->attributeFetcher->toDateTime($ldapAttributes['last_login']));
+        $syliusUser->setVerifiedAt($this->attributeFetcher->toDateTime($ldapAttributes['verified_at']));
         $syliusUser->setEmailCanonical($ldapAttributes['email_canonical']);
         $syliusUser->setUsernameCanonical($ldapAttributes['username_canonical']);
-        $syliusUser->setCredentialsExpireAt($ldapAttributes['credentials_expire_at']);
+        $syliusUser->setCredentialsExpireAt($this->attributeFetcher->toDateTime($ldapAttributes['credentials_expire_at']));
 
         if ($syliusUser instanceof AdminUserInterface) {
             $syliusUser->setLastName($ldapAttributes['last_name']);
@@ -150,67 +152,29 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     private function synchroniseUsers(
         SyliusUserInterface $sourceUser,
         SyliusUserInterface $targetUser
-    ) {
-        $targetUser->setEmail($sourceUser->getEmail());
-        $targetUser->setLocked(false);
-#        $targetUser->setExpiresAt($sourceUser->getExpiresAt());
-        $targetUser->setEnabled($sourceUser->isEnabled());
-        $targetUser->setLastLogin($sourceUser->getLastLogin());
-        $targetUser->setVerifiedAt($sourceUser->getVerifiedAt());
-        $targetUser->setEmailCanonical($sourceUser->getEmailCanonical());
-        $targetUser->setUsernameCanonical($sourceUser->getUsernameCanonical());
-        $targetUser->setCredentialsExpireAt($sourceUser->getCredentialsExpireAt());
+    ): void {
+        $attributesToSync = [
+            'email',
+            'expiresAt',
+            'lastLogin',
+            'locked',
+            'enabled',
+            'verifiedAt',
+            'emailCanonical',
+            'username',
+            'usernameCanonical',
+            'credentialsExpireAt',
+        ];
 
         if ($targetUser instanceof AdminUserInterface && $sourceUser instanceof AdminUserInterface) {
-            $targetUser->setLastName($sourceUser->getLastName());
-            $targetUser->setFirstName($sourceUser->getFirstName());
-            $targetUser->setLocaleCode($sourceUser->getLocaleCode());
-        }
-    }
-
-    private function fetchLdapAttributesForUser(SymfonyUserInterface $user): array
-    {
-        /** @var string $query */
-        $query = sprintf("uid=%s", $user->getUsername());
-
-        /** @var QueryInterface $search */
-        $search = $this->ldap->query($this->dn, $query);
-
-        /** @var iterable<Entry> $entries */
-        $entries = $search->execute();
-
-        /** @var array<string, string> $userAttributes */
-        $userAttributes = array(
-            'email' => null,
-            'locked' => false,
-            'username' => null,
-            'expires_at' => null,
-            'last_login' => null,
-            'verified_at' => null,
-            'email_canonical' => null,
-            'username_canonical' => null,
-            'credentials_expire_at' => null,
-            'last_name' => null,
-            'first_name' => null,
-            'locale_code' => null,
-        );
-
-        if (count($entries) >= 1) {
-            /** @var Entry $entry */
-            $entry = $entries[0];
-
-            foreach ($this->attributeMapping as $userKey => $ldapKey) {
-                Assert::keyExists($userAttributes, $userKey, sprintf("Unknown key '%s'!", $userKey));
-
-                if ($entry->hasAttribute($ldapKey)) {
-                    /** @var array<string> $value */
-                    $value = array_values($entry->getAttribute($ldapKey));
-
-                    $userAttributes[$userKey] = (string)$value[0];
-                }
-            }
+            $attributesToSync[] = 'lastName';
+            $attributesToSync[] = 'firstName';
+            $attributesToSync[] = 'localeCode';
         }
 
-        return $userAttributes;
+        foreach ($attributesToSync as $attributeToSync) {
+            $value = $this->propertyAccessor->getValue($sourceUser, $attributeToSync);
+            $this->propertyAccessor->setValue($targetUser, $attributeToSync, $value);
+        }
     }
 }

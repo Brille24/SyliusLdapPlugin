@@ -7,7 +7,7 @@
     "require": {
         "php": "^7.2",
 
-        "sylius/sylius": "^1.4",
+        "sylius/sylius": "^1.6",
         "symfony/ldap": "^4.3"
     },
     "require-dev": {
@@ -41,6 +41,15 @@
         "symfony/dependency-injection": "4.1.8",
         "symfony/dom-crawler": "4.1.8",
         "symfony/routing": "4.1.8"
+    },
+    "scripts": {
+        "fix": [
+            "vendor/bin/ecs check src tests/Behat --config easy-coding-standard.yml --fix"
+        ],
+        "analyse": [
+            "vendor/bin/ecs check src tests/Behat --config easy-coding-standard.yml --no-progress-bar",
+            "vendor/bin/phpstan analyse src --no-progress"
+        ]
     },
     "prefer-stable": true,
     "autoload": {

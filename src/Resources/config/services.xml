@@ -3,18 +3,18 @@
 <container xmlns="http://symfony.com/schema/dic/services" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
     <services>
 
-<!--
         <service
-            id="sylius_ldap.listener.admin_menu"
-            class="Brille24\SyliusLdapPlugin\Menu\AdminMenuListener"
-        >
-            <tag
-                name="kernel.event_listener"
-                event="sylius.menu.admin.main"
-                method="addAdminMenuItems"
-            />
+            id="sylius_ldap.ldap.ldap_attribute_fetcher"
+            class="Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcher">
+            <argument type="service" id="Symfony\Component\Ldap\Ldap" />
+            <argument type="collection">
+                <!-- Enter attribute mapping here: -->
+                <argument key="first_name">givenName</argument>
+                <argument key="last_name">sn</argument>
+                <argument key="email">mail</argument>
+            </argument>
+            <argument>%env(LDAP_USER_QUERY_DN)%</argument>
         </service>
--->
 
         <service
             id="sylius_ldap.user_provider.ldap_as_admin_user"
@@ -32,20 +32,15 @@
                     <argument>%env(LDAP_QUERY_PARAMETER)%</argument>
                 </service>
             </argument>
-            <argument type="service" id="sylius.repository.admin_user" />
-            <argument type="service" id="Symfony\Component\Ldap\Ldap" />
-            <argument type="collection">
-                <!-- Enter attribute mapping here: -->
-                <argument key="first_name">givenName</argument>
-                <argument key="last_name">sn</argument>
-                <argument key="email">mail</argument>
-            </argument>
-            <argument>%env(LDAP_USER_QUERY_DN)%</argument>
+            <argument type="service" id="sylius.admin_user_provider.name_based" />
+            <argument type="service" id="property_accessor" />
+            <argument type="service" id="sylius_ldap.ldap.ldap_attribute_fetcher" />
         </service>
 
         <service id="Symfony\Component\Ldap\Ldap">
             <argument type="service" id="Symfony\Component\Ldap\Adapter\ExtLdap\Adapter"/>
         </service>
+
         <service id="Symfony\Component\Ldap\Adapter\ExtLdap\Adapter">
             <argument type="collection">
                 <argument key="host">%env(LDAP_HOST)%</argument>
