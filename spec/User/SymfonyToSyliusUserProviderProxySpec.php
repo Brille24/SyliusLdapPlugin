@@ -117,7 +117,6 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
         $date = new DateTime();
         $propertyAccessor->getValue(Argument::type(AdminUser::class), 'email')->willReturn('sylius@sylius.de');
         $propertyAccessor->getValue(Argument::type(AdminUser::class), 'emailCanonical')->willReturn('sylius@sylius.de');
-        $propertyAccessor->getValue(Argument::type(AdminUser::class), 'locked')->willReturn(false);
         $propertyAccessor->getValue(Argument::type(AdminUser::class), 'enabled')->willReturn(true);
         $propertyAccessor->getValue(Argument::type(AdminUser::class), 'lastLogin')->willReturn($date);
         $propertyAccessor->getValue(Argument::type(AdminUser::class), 'verifiedAt')->willReturn($date);
@@ -129,7 +128,6 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
         // Setting the values
         $propertyAccessor->setValue($syliusUser, 'email','sylius@sylius.de')->shouldBeCalled();
         $propertyAccessor->setValue($syliusUser, 'emailCanonical', 'sylius@sylius.de')->shouldBeCalled();
-        $propertyAccessor->setValue($syliusUser, 'locked', false)->shouldBeCalled();
         $propertyAccessor->setValue($syliusUser, 'enabled', true)->shouldBeCalled();
         $propertyAccessor->setValue($syliusUser, 'lastLogin', $date)->shouldBeCalled();
         $propertyAccessor->setValue($syliusUser, 'verifiedAt', $date)->shouldBeCalled();

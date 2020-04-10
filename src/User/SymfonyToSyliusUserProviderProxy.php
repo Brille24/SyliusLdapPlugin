@@ -157,7 +157,6 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
             'email',
             'expiresAt',
             'lastLogin',
-            'locked',
             'enabled',
             'verifiedAt',
             'emailCanonical',
