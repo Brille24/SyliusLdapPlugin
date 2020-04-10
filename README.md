@@ -2,41 +2,9 @@
 
 <p align="center">Plugin for integrating Sylius with LDAP.</p>
 
-**When using instead of the Sylius form login you will not be able to log in with existing users into Sylius.**
+**When using instead of the Sylius form login, you will not be able to log in with existing users into Sylius.**
 
-## Try it before installing
-
-If yo want to see if this plugin works with your LDAP server, you can try it before integrating it into your project.
-This sylius-plugin comes with a dummy sylius installation inside the test folder that you can use to test the integration with your LDAP server.
-
-Run the following commands in a local directory:
-
-```bash
-$ git clone https://github.com/Sylius/SyliusLdapPlugin.git SyliusLdapPlugin
-$ cd SyliusLdapPlugin
-$ composer install
-$ (cd tests/Application && yarn install)
-$ (cd tests/Application && yarn build)
-$ (cd tests/Application && bin/console assets:install public -e test)
-```
-    
-To be able to setup a plugin's database, remember to configure you database credentials and LDAP configuration (see section "Configuration" below) in `tests/Application/.env.local`. After that is done, set up the database:
-
-```bash
-$ (cd tests/Application && bin/console doctrine:database:create -e test)
-$ (cd tests/Application && bin/console doctrine:schema:create -e test)
-$ (cd tests/Application && bin/console sylius:fixtures:load -e dev)
-```
-When that is done, you can just start the symfony server:
-    
-```bash
-$ (cd tests/Application && bin/console server:run -d public -e dev)
-```
-    
-The server is now running, you can reach it at [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/) and try to log in using your LDAP credentials.
-    
 ## Installation
-
 Run `composer require brille24/sylius-ldap-plugin` in your project-root.
 
 ## Configuration
@@ -56,6 +24,8 @@ LDAP_LOOKUP_DN='cn=lookup-user,dc=example,dc=com'
 LDAP_USER_QUERY_DN='dc=example,dc=com'
 ###< sylius/ldap-plugin ###
 ```
+
+To use this new method of authorizing users change the `form_login` in `config/packages/security.yaml` to `form_login_ldap`. For reference the plugin version of this configuration file is located under `tests/Application/config/packages/security.yaml`.
 
 ## Origin / Other Sources
 
