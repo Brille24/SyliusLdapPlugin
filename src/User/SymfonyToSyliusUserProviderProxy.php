@@ -16,8 +16,8 @@ namespace Brille24\SyliusLdapPlugin\User;
 use Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcherInterface;
 use Sylius\Bundle\UserBundle\Provider\AbstractUserProvider;
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
-use Sylius\Component\Core\Model\AdminUser;
 use Sylius\Component\Core\Model\AdminUserInterface;
+use Sylius\Component\Resource\Factory\FactoryInterface;
 use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
@@ -30,7 +30,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     /**
      * @var SymfonyUserProviderInterface
      */
-    private $innerUserProvider;
+    private $ldapUserProvider;
 
     /**
      * @var AbstractUserProvider
@@ -47,79 +47,62 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
      */
     private $propertyAccessor;
 
+    /**
+     * @var FactoryInterface
+     */
+    private $adminUserFactory;
+
     public function __construct(
-        SymfonyUserProviderInterface $innerUserProvider,
+        SymfonyUserProviderInterface $ldapUserProvider,
         AbstractUserProvider $adminUserProvider,
         PropertyAccessorInterface $propertyAccessor,
-        LdapAttributeFetcherInterface $attributeFetcher
+        LdapAttributeFetcherInterface $attributeFetcher,
+        FactoryInterface $adminUserFactory
     ) {
-        $this->innerUserProvider = $innerUserProvider;
+        $this->ldapUserProvider = $ldapUserProvider;
         $this->adminUserProvider = $adminUserProvider;
         $this->attributeFetcher = $attributeFetcher;
         $this->propertyAccessor = $propertyAccessor;
+        $this->adminUserFactory = $adminUserFactory;
     }
 
-    public function loadUserByUsername($username)
+    public function loadUserByUsername($username): SymfonyUserInterface
     {
+        /** @var SymfonyUserInterface $symfonyLdapUser */
+        $symfonyLdapUser = $this->ldapUserProvider->loadUserByUsername($username);
+        $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
+
         try {
             /** @var SyliusUserInterface $syliusUser */
             $syliusUser = $this->adminUserProvider->loadUserByUsername($username);
         } catch (UsernameNotFoundException $notFoundException) {
-            $syliusUser = null;
+            return $syliusLdapUser;
         }
 
-        /** @var SymfonyUserInterface|null $symfonyLdapUser */
-        try {
-            $symfonyLdapUser = $this->innerUserProvider->loadUserByUsername($username);
-        } catch (UsernameNotFoundException $notFoundException) {
-            if ($syliusUser === null) {
-                throw new UsernameNotFoundException('User is not available in LDAP');
-            }
-            $symfonyLdapUser = null;
-        }
-
-        /** @var SyliusUserInterface $syliusLdapUser */
-        $syliusLdapUser = null;
-
-        if (is_object($symfonyLdapUser)) {
-            $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
-        }
-
-        // If Sylius does not have any user, then just take the one converted from LDAP
-        if (null === $syliusUser) {
-            $syliusUser = $syliusLdapUser;
-
-        // If both systems have the user, synchronise the Sylius user with the LDAP Info
-        } elseif (is_object($syliusLdapUser)) {
-            $this->synchroniseUsers($syliusLdapUser, $syliusUser);
-        }
+        $this->synchroniseUsers($syliusLdapUser, $syliusUser);
 
         return $syliusUser;
     }
 
     public function refreshUser(SymfonyUserInterface $user): SymfonyUserInterface
     {
-        /** @var SymfonyUserInterface|null $symfonyLdapUser */
-        $symfonyLdapUser = $this->innerUserProvider->refreshUser($user);
+        /** @var SymfonyUserInterface $symfonyLdapUser */
+        $symfonyLdapUser = $this->ldapUserProvider->refreshUser($user);
 
-        /** @var SyliusUserInterface|null $syliusLdapUser */
-        $syliusLdapUser = null;
+        /** @var SyliusUserInterface $syliusLdapUser */
+        $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
 
-        if (is_object($symfonyLdapUser)) {
-            $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
+        // Non-sylius-users (e.g.: symfony-users) are immutable and cannot be updated / synced.
+        Assert::isInstanceOf($user, SyliusUserInterface::class);
 
-            // Non-sylius-users (e.g.: symfony-users) are immutable and cannot be updated / synced.
-            Assert::isInstanceOf($user, SyliusUserInterface::class);
-
-            $this->synchroniseUsers($syliusLdapUser, $user);
-        }
+        $this->synchroniseUsers($syliusLdapUser, $user);
 
         return $user;
     }
 
     public function supportsClass($class): bool
     {
-        return $this->innerUserProvider->supportsClass($class);
+        return $this->ldapUserProvider->supportsClass($class);
     }
 
     private function convertSymfonyToSyliusUser(SymfonyUserInterface $symfonyUser): SyliusUserInterface
@@ -128,7 +111,8 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $ldapAttributes = $this->attributeFetcher->fetchAttributesForUser($symfonyUser);
 
         $locked = $this->attributeFetcher->toBool($ldapAttributes['locked']);
-        $syliusUser = new AdminUser();
+        /** @var AdminUserInterface $syliusUser */
+        $syliusUser = $this->adminUserFactory->createNew();
         $syliusUser->setUsername($symfonyUser->getUsername());
         $syliusUser->setEmail($ldapAttributes['email']);
         $syliusUser->setLocked($locked);

@@ -35,6 +35,7 @@
             <argument type="service" id="sylius.admin_user_provider.name_based" />
             <argument type="service" id="property_accessor" />
             <argument type="service" id="sylius_ldap.ldap.ldap_attribute_fetcher" />
+            <argument type="service" id="sylius.factory.admin_user" />
         </service>
 
         <service id="Symfony\Component\Ldap\Ldap">
