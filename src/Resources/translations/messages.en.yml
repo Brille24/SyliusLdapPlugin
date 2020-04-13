@@ -1,0 +1,3 @@
+brille24:
+    ui:
+        changes_will_be_overriden_by_ldap: "Changes here will not have any effect on the data stored in the LDAP service. When this user logges in again the data here will be replaced with data from LDAP."
