@@ -115,6 +115,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $syliusUser = $this->adminUserFactory->createNew();
         $syliusUser->setUsername($symfonyUser->getUsername());
         $syliusUser->setEmail($ldapAttributes['email']);
+        $syliusUser->setPassword('');
         $syliusUser->setLocked($locked);
         $syliusUser->setEnabled(!$locked);
 //        $syliusUser->setExpiresAt($ldapAttributes['expires_at']);

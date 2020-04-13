@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Brille24\SyliusLdapPlugin\Tests\Behat\Page\Shop;
+namespace Tests\Brille24\SyliusLdapPlugin\Behat\Page\Shop;
 
 use FriendsOfBehat\PageObjectExtension\Page\SymfonyPageInterface;
 

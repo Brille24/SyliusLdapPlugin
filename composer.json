@@ -59,7 +59,9 @@
         }
     },
     "autoload-dev": {
-        "classmap": ["tests/Application/Kernel.php"]
+        "psr-4": {
+            "Tests\\Brille24\\SyliusLdapPlugin\\": "tests/"
+        }
     },
     "extra": {
         "branch-alias": {
