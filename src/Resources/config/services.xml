@@ -21,7 +21,7 @@
             class="Brille24\SyliusLdapPlugin\User\SymfonyToSyliusUserProviderProxy"
         >
             <argument type="service">
-                <service class="Symfony\Component\Security\Core\User\LdapUserProvider">
+                <service class="Symfony\Component\Ldap\Security\LdapUserProvider">
                     <argument type="service" id="Symfony\Component\Ldap\Ldap" />
                     <argument>%env(LDAP_USER_QUERY_DN)%</argument>
                     <argument>%env(LDAP_LOOKUP_DN)%</argument>
