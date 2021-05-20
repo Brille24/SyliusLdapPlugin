@@ -33,9 +33,9 @@
                 </service>
             </argument>
             <argument type="service" id="sylius.admin_user_provider.name_based" />
-            <argument type="service" id="property_accessor" />
             <argument type="service" id="sylius_ldap.ldap.ldap_attribute_fetcher" />
             <argument type="service" id="sylius.factory.admin_user" />
+            <argument type="service" id="Brille24\SyliusLdapPlugin\User\UserSynchronizer" />
         </service>
 
         <service id="Symfony\Component\Ldap\Ldap">
@@ -52,6 +52,10 @@
                     <argument key="referrals">false</argument>
                 </argument>
             </argument>
+        </service>
+
+        <service id="Brille24\SyliusLdapPlugin\User\UserSynchronizer">
+            <argument type="service" id="property_accessor" />
         </service>
 
     </services>

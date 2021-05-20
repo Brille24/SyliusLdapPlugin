@@ -43,27 +43,27 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     private $attributeFetcher;
 
     /**
-     * @var PropertyAccessorInterface
-     */
-    private $propertyAccessor;
-
-    /**
      * @var FactoryInterface
      */
     private $adminUserFactory;
 
+    /**
+     * @var UserSynchronizer
+     */
+    private $userSynchronizer;
+
     public function __construct(
         SymfonyUserProviderInterface $ldapUserProvider,
         AbstractUserProvider $adminUserProvider,
-        PropertyAccessorInterface $propertyAccessor,
         LdapAttributeFetcherInterface $attributeFetcher,
-        FactoryInterface $adminUserFactory
+        FactoryInterface $adminUserFactory,
+        UserSynchronizer $userSynchronizer
     ) {
         $this->ldapUserProvider = $ldapUserProvider;
         $this->adminUserProvider = $adminUserProvider;
         $this->attributeFetcher = $attributeFetcher;
-        $this->propertyAccessor = $propertyAccessor;
         $this->adminUserFactory = $adminUserFactory;
+        $this->userSynchronizer = $userSynchronizer;
     }
 
     public function loadUserByUsername($username): SymfonyUserInterface
@@ -79,7 +79,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
             return $syliusLdapUser;
         }
 
-        $this->synchroniseUsers($syliusLdapUser, $syliusUser);
+        $this->userSynchronizer->synchroniseUsers($syliusLdapUser, $syliusUser);
 
         return $syliusUser;
     }
@@ -95,7 +95,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         // Non-sylius-users (e.g.: symfony-users) are immutable and cannot be updated / synced.
         Assert::isInstanceOf($user, SyliusUserInterface::class);
 
-        $this->synchroniseUsers($syliusLdapUser, $user);
+        $this->userSynchronizer->synchroniseUsers($syliusLdapUser, $user);
 
         return $user;
     }
@@ -118,7 +118,6 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $syliusUser->setPassword('');
         $syliusUser->setLocked($locked);
         $syliusUser->setEnabled(!$locked);
-//        $syliusUser->setExpiresAt($ldapAttributes['expires_at']);
         $syliusUser->setLastLogin($this->attributeFetcher->toDateTime($ldapAttributes['last_login']));
         $syliusUser->setVerifiedAt($this->attributeFetcher->toDateTime($ldapAttributes['verified_at']));
         $syliusUser->setEmailCanonical($ldapAttributes['email_canonical']);
@@ -134,31 +133,4 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         return $syliusUser;
     }
 
-    private function synchroniseUsers(
-        SyliusUserInterface $sourceUser,
-        SyliusUserInterface $targetUser
-    ): void {
-        $attributesToSync = [
-            'email',
-            'expiresAt',
-            'lastLogin',
-            'enabled',
-            'verifiedAt',
-            'emailCanonical',
-            'username',
-            'usernameCanonical',
-            'credentialsExpireAt',
-        ];
-
-        if ($targetUser instanceof AdminUserInterface && $sourceUser instanceof AdminUserInterface) {
-            $attributesToSync[] = 'lastName';
-            $attributesToSync[] = 'firstName';
-            $attributesToSync[] = 'localeCode';
-        }
-
-        foreach ($attributesToSync as $attributeToSync) {
-            $value = $this->propertyAccessor->getValue($sourceUser, $attributeToSync);
-            $this->propertyAccessor->setValue($targetUser, $attributeToSync, $value);
-        }
-    }
 }
