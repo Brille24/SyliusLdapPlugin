@@ -41,6 +41,7 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
 
     public function fetchAttributesForUser(SymfonyUserInterface $user): array
     {
+        /** @psalm-suppress DeprecatedMethod */
         $query = sprintf('uid=%s', $user->getUsername());
         $search = $this->ldap->query($this->dn, $query);
         /** @psalm-suppress PossiblyInvalidMethodCall */

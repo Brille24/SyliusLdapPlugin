@@ -67,6 +67,11 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $this->userSynchronizer = $userSynchronizer;
     }
 
+    /**
+     * @param string $username
+     *
+     * @psalm-suppress DeprecatedMethod
+     */
     public function loadUserByUsername($username): SymfonyUserInterface
     {
         $symfonyLdapUser = $this->ldapUserProvider->loadUserByUsername($username);
@@ -98,6 +103,11 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         return $user;
     }
 
+    /**
+     * @param string $class
+     *
+     * @return bool
+     */
     public function supportsClass($class): bool
     {
         return $this->ldapUserProvider->supportsClass($class);
@@ -111,6 +121,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $locked = $this->attributeFetcher->toBool($ldapAttributes['locked']);
         /** @var UserInterface $syliusUser */
         $syliusUser = $this->adminUserFactory->createNew();
+        /** @psalm-suppress DeprecatedMethod */
         $syliusUser->setUsername($symfonyUser->getUsername());
         $syliusUser->setEmail($ldapAttributes['email']);
         $syliusUser->setPassword('');
