@@ -124,6 +124,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $syliusUser->setUsernameCanonical($ldapAttributes['username_canonical']);
         $syliusUser->setCredentialsExpireAt($this->attributeFetcher->toDateTime($ldapAttributes['credentials_expire_at']));
 
+        /** @phpstan-ignore-next-line */
         if ($syliusUser instanceof AdminUserInterface) {
             $syliusUser->setLastName($ldapAttributes['last_name']);
             $syliusUser->setFirstName($ldapAttributes['first_name']);

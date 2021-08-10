@@ -75,7 +75,7 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
 
                 if ($entry->hasAttribute($ldapKey)) {
                     /** @var array<string> $value */
-                    $value = array_values($entry->getAttribute($ldapKey));
+                    $value = array_values($entry->getAttribute($ldapKey) ?? []);
 
                     $userAttributes[$userKey] = $value[0];
                 }
