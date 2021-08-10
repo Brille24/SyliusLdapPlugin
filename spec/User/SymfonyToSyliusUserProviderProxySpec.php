@@ -4,6 +4,7 @@ namespace spec\Brille24\SyliusLdapPlugin\User;
 
 use Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcherInterface;
 use Brille24\SyliusLdapPlugin\User\SymfonyToSyliusUserProviderProxy;
+use Brille24\SyliusLdapPlugin\User\UserSynchronizerInterface;
 use DateTime;
 use PhpParser\Node\Arg;
 use Prophecy\Argument;
@@ -24,11 +25,11 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
     function let(
         UserProviderInterface $innerUserProvider,
         AbstractUserProvider $adminUserProvider,
-        PropertyAccessorInterface $propertyAccessor,
         LdapAttributeFetcherInterface $attributeFetcher,
-        FactoryInterface $adminUserFactory
+        FactoryInterface $adminUserFactory,
+        UserSynchronizerInterface $userSynchronizer
     ) {
-        $this->beConstructedWith($innerUserProvider, $adminUserProvider, $propertyAccessor, $attributeFetcher, $adminUserFactory);
+        $this->beConstructedWith($innerUserProvider, $adminUserProvider, $attributeFetcher, $adminUserFactory, $userSynchronizer);
     }
 
     function it_is_a_sylius_user_provider()
@@ -79,12 +80,12 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
     function it_updates_the_sylius_user_with_data_from_ldap(
         AbstractUserProvider $adminUserProvider,
         UserProviderInterface $innerUserProvider,
-        PropertyAccessorInterface $propertyAccessor,
         LdapAttributeFetcherInterface $attributeFetcher,
         FactoryInterface $adminUserFactory,
         AdminUserInterface $adminUser,
         SyliusUserInterface $syliusUser,
-        UserInterface $ldapUser
+        UserInterface $ldapUser,
+        UserSynchronizerInterface $userSynchronizer
     ) {
         $adminUserProvider->loadUserByUsername('test')->willReturn($syliusUser);
         $innerUserProvider->loadUserByUsername('test')->willReturn($ldapUser);
@@ -108,28 +109,7 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
         $attributeFetcher->toBool(Argument::any())->willReturn(false);
         $attributeFetcher->toDateTime(Argument::any())->willReturn(new DateTime());
 
-        // Getting the values
-        $date = new DateTime();
-        $propertyAccessor->getValue($adminUser, 'email')->willReturn('sylius@sylius.de');
-        $propertyAccessor->getValue($adminUser, 'emailCanonical')->willReturn('sylius@sylius.de');
-        $propertyAccessor->getValue($adminUser, 'enabled')->willReturn(true);
-        $propertyAccessor->getValue($adminUser, 'lastLogin')->willReturn($date);
-        $propertyAccessor->getValue($adminUser, 'verifiedAt')->willReturn($date);
-        $propertyAccessor->getValue($adminUser, 'expiresAt')->willReturn($date);
-        $propertyAccessor->getValue($adminUser, 'credentialsExpireAt')->willReturn($date);
-        $propertyAccessor->getValue($adminUser, 'usernameCanonical')->willReturn('admin');
-        $propertyAccessor->getValue($adminUser, 'username')->willReturn('admin');
-
-        // Setting the values
-        $propertyAccessor->setValue($syliusUser, 'email','sylius@sylius.de')->shouldBeCalled();
-        $propertyAccessor->setValue($syliusUser, 'emailCanonical', 'sylius@sylius.de')->shouldBeCalled();
-        $propertyAccessor->setValue($syliusUser, 'enabled', true)->shouldBeCalled();
-        $propertyAccessor->setValue($syliusUser, 'lastLogin', $date)->shouldBeCalled();
-        $propertyAccessor->setValue($syliusUser, 'verifiedAt', $date)->shouldBeCalled();
-        $propertyAccessor->setValue($syliusUser, 'expiresAt', $date)->shouldBeCalled();
-        $propertyAccessor->setValue($syliusUser, 'credentialsExpireAt', $date)->shouldBeCalled();
-        $propertyAccessor->setValue($syliusUser, 'usernameCanonical', 'admin')->shouldBeCalled();
-        $propertyAccessor->setValue($syliusUser, 'username', 'admin')->shouldBeCalled();
+        $userSynchronizer->synchroniseUsers($adminUser, $syliusUser)->shouldBeCalled();
 
         $this->loadUserByUsername('test')->shouldReturn($syliusUser);
     }

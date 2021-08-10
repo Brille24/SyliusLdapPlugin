@@ -48,7 +48,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     private $adminUserFactory;
 
     /**
-     * @var UserSynchronizer
+     * @var UserSynchronizerInterface
      */
     private $userSynchronizer;
 
@@ -57,7 +57,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         AbstractUserProvider $adminUserProvider,
         LdapAttributeFetcherInterface $attributeFetcher,
         FactoryInterface $adminUserFactory,
-        UserSynchronizer $userSynchronizer
+        UserSynchronizerInterface $userSynchronizer
     ) {
         $this->ldapUserProvider = $ldapUserProvider;
         $this->adminUserProvider = $adminUserProvider;
