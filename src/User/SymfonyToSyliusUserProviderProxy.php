@@ -18,6 +18,7 @@ use Sylius\Bundle\UserBundle\Provider\AbstractUserProvider;
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
 use Sylius\Component\Core\Model\AdminUserInterface;
 use Sylius\Component\Resource\Factory\FactoryInterface;
+use Sylius\Component\User\Model\UserInterface;
 use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
@@ -68,7 +69,6 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
 
     public function loadUserByUsername($username): SymfonyUserInterface
     {
-        /** @var SymfonyUserInterface $symfonyLdapUser */
         $symfonyLdapUser = $this->ldapUserProvider->loadUserByUsername($username);
         $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
 
@@ -86,10 +86,8 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
 
     public function refreshUser(SymfonyUserInterface $user): SymfonyUserInterface
     {
-        /** @var SymfonyUserInterface $symfonyLdapUser */
         $symfonyLdapUser = $this->ldapUserProvider->refreshUser($user);
 
-        /** @var SyliusUserInterface $syliusLdapUser */
         $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
 
         // Non-sylius-users (e.g.: symfony-users) are immutable and cannot be updated / synced.
@@ -111,7 +109,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $ldapAttributes = $this->attributeFetcher->fetchAttributesForUser($symfonyUser);
 
         $locked = $this->attributeFetcher->toBool($ldapAttributes['locked']);
-        /** @var AdminUserInterface $syliusUser */
+        /** @var UserInterface $syliusUser */
         $syliusUser = $this->adminUserFactory->createNew();
         $syliusUser->setUsername($symfonyUser->getUsername());
         $syliusUser->setEmail($ldapAttributes['email']);
@@ -124,7 +122,6 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $syliusUser->setUsernameCanonical($ldapAttributes['username_canonical']);
         $syliusUser->setCredentialsExpireAt($this->attributeFetcher->toDateTime($ldapAttributes['credentials_expire_at']));
 
-        /** @phpstan-ignore-next-line */
         if ($syliusUser instanceof AdminUserInterface) {
             $syliusUser->setLastName($ldapAttributes['last_name']);
             $syliusUser->setFirstName($ldapAttributes['first_name']);

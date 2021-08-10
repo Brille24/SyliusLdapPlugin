@@ -40,6 +40,7 @@ final class UserSynchronizer implements UserSynchronizerInterface
         }
 
         foreach ($attributesToSync as $attributeToSync) {
+            /** @psalm-suppress MixedAssignment */
             $value = $this->propertyAccessor->getValue($sourceUser, $attributeToSync);
             $this->propertyAccessor->setValue($targetUser, $attributeToSync, $value);
         }
