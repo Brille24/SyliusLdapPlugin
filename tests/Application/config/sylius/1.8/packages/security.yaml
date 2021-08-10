@@ -20,6 +20,8 @@ security:
             id: sylius.shop_user_provider.email_or_name_based
         sylius_api_shop_user_provider:
             id: sylius.shop_user_provider.email_or_name_based
+        brille24_ldap_admin_user_provider:
+            id: sylius_ldap.user_provider.ldap_as_admin_user
         sylius_api_chain_provider:
             chain:
                 providers: [sylius_api_shop_user_provider, sylius_api_admin_user_provider]
@@ -31,9 +33,9 @@ security:
             switch_user: true
             context: admin
             pattern: "%sylius.security.admin_regex%"
-            provider: sylius_admin_user_provider
-            form_login:
-                provider: sylius_admin_user_provider
+            provider: brille24_ldap_admin_user_provider
+            form_login_ldap:
+                provider: brille24_ldap_admin_user_provider
                 login_path: sylius_admin_login
                 check_path: sylius_admin_login_check
                 failure_path: sylius_admin_login
@@ -43,6 +45,11 @@ security:
                 csrf_token_generator: security.csrf.token_manager
                 csrf_parameter: _csrf_admin_security_token
                 csrf_token_id: admin_authenticate
+                service: Symfony\Component\Ldap\Ldap
+                dn_string: "%env(LDAP_USER_QUERY_DN)%"
+                query_string: "%env(LDAP_QUERY_STRING)%"
+                search_dn: "%env(LDAP_LOOKUP_DN)%"
+                search_password: "%env(LDAP_PASSWORD)%"
             remember_me:
                 secret: "%env(APP_SECRET)%"
                 path: "/%sylius_admin.path_name%"
@@ -60,7 +67,7 @@ security:
 
         new_api_admin_user:
             pattern: "%sylius.security.new_api_route%/admin-user-authentication-token"
-            provider: sylius_admin_user_provider
+            provider: sylius_api_admin_user_provider
             stateless: true
             anonymous: true
             json_login:
