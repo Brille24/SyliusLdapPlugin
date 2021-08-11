@@ -50,7 +50,7 @@
     "autoload": {
         "psr-4": {
             "Brille24\\SyliusLdapPlugin\\": "src/",
-            "Brille24\\SyliusLdapPlugin\\Tests\\": "tests/"
+            "Tests\\Brille24\\SyliusLdapPlugin\\": "tests/"
         }
     },
     "autoload-dev": {
