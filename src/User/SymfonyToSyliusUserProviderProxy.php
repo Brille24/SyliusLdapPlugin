@@ -20,7 +20,6 @@ use Sylius\Component\Core\Model\AdminUserInterface;
 use Sylius\Component\Resource\Factory\FactoryInterface;
 use Sylius\Component\User\Model\UserInterface;
 use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
-use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;

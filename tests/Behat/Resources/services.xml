@@ -4,13 +4,19 @@
     <services>
         <defaults public="true" />
         <!-- Put your Behat services here -->
-
-        <service id="acme_sylius_example.context.ui.shop.welcome" class="Tests\Brille24\SyliusLdapPlugin\Behat\Context\Ui\Shop\WelcomeContext">
-            <argument type="service" id="acme_sylius_example.page.shop.static_welcome" />
-            <argument type="service" id="acme_sylius_example.page.shop.dynamic_welcome" />
+        <service class="Tests\Brille24\SyliusLdapPlugin\Behat\Service\LdapUserProvider" id="sylius_ldap.user_provider.ldap_as_admin_user">
+            <argument type="service" id="sylius.repository.admin_user" />
         </service>
 
-        <service id="acme_sylius_example.page.shop.static_welcome" class="Tests\Brille24\SyliusLdapPlugin\Behat\Page\Shop\StaticWelcomePage" parent="sylius.behat.symfony_page" public="false" />
-        <service id="acme_sylius_example.page.shop.dynamic_welcome" class="Tests\Brille24\SyliusLdapPlugin\Behat\Page\Shop\DynamicWelcomePage" parent="sylius.behat.symfony_page" public="false" />
+        <service id="security.authentication.provider.ldap_bind" class="Tests\Brille24\SyliusLdapPlugin\Behat\Service\LdapBindAuthenticationProvider" abstract="true">
+            <argument /> <!-- User Provider -->
+            <argument /> <!-- UserChecker -->
+            <argument /> <!-- Provider-shared Key -->
+            <argument /> <!-- LDAP -->
+            <argument /> <!-- Base DN -->
+            <argument>%security.authentication.hide_user_not_found%</argument>
+            <argument /> <!-- search dn -->
+            <argument /> <!-- search password -->
+        </service>
     </services>
 </container>
