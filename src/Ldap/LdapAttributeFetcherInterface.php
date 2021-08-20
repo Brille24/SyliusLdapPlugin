@@ -11,7 +11,17 @@ interface LdapAttributeFetcherInterface
 {
     public function fetchAttributesForUser(SymfonyUserInterface $user): array;
 
+    /**
+     * @param mixed $value
+     *
+     * @return bool
+     */
     public function toBool($value): bool;
 
+    /**
+     * @param mixed $value
+     *
+     * @return DateTimeInterface|null
+     */
     public function toDateTime($value): ?DateTimeInterface;
 }

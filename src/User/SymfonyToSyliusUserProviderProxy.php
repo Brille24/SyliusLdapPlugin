@@ -18,8 +18,8 @@ use Sylius\Bundle\UserBundle\Provider\AbstractUserProvider;
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
 use Sylius\Component\Core\Model\AdminUserInterface;
 use Sylius\Component\Resource\Factory\FactoryInterface;
+use Sylius\Component\User\Model\UserInterface;
 use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
-use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
@@ -48,7 +48,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     private $adminUserFactory;
 
     /**
-     * @var UserSynchronizer
+     * @var UserSynchronizerInterface
      */
     private $userSynchronizer;
 
@@ -57,7 +57,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         AbstractUserProvider $adminUserProvider,
         LdapAttributeFetcherInterface $attributeFetcher,
         FactoryInterface $adminUserFactory,
-        UserSynchronizer $userSynchronizer
+        UserSynchronizerInterface $userSynchronizer
     ) {
         $this->ldapUserProvider = $ldapUserProvider;
         $this->adminUserProvider = $adminUserProvider;
@@ -66,9 +66,13 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $this->userSynchronizer = $userSynchronizer;
     }
 
+    /**
+     * @param string $username
+     *
+     * @psalm-suppress DeprecatedMethod
+     */
     public function loadUserByUsername($username): SymfonyUserInterface
     {
-        /** @var SymfonyUserInterface $symfonyLdapUser */
         $symfonyLdapUser = $this->ldapUserProvider->loadUserByUsername($username);
         $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
 
@@ -86,10 +90,8 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
 
     public function refreshUser(SymfonyUserInterface $user): SymfonyUserInterface
     {
-        /** @var SymfonyUserInterface $symfonyLdapUser */
         $symfonyLdapUser = $this->ldapUserProvider->refreshUser($user);
 
-        /** @var SyliusUserInterface $syliusLdapUser */
         $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
 
         // Non-sylius-users (e.g.: symfony-users) are immutable and cannot be updated / synced.
@@ -100,6 +102,11 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         return $user;
     }
 
+    /**
+     * @param string $class
+     *
+     * @return bool
+     */
     public function supportsClass($class): bool
     {
         return $this->ldapUserProvider->supportsClass($class);
@@ -111,8 +118,9 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $ldapAttributes = $this->attributeFetcher->fetchAttributesForUser($symfonyUser);
 
         $locked = $this->attributeFetcher->toBool($ldapAttributes['locked']);
-        /** @var AdminUserInterface $syliusUser */
+        /** @var UserInterface $syliusUser */
         $syliusUser = $this->adminUserFactory->createNew();
+        /** @psalm-suppress DeprecatedMethod */
         $syliusUser->setUsername($symfonyUser->getUsername());
         $syliusUser->setEmail($ldapAttributes['email']);
         $syliusUser->setPassword('');

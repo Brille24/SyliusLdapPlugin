@@ -18,7 +18,7 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
     /** @var LdapInterface */
     private $ldap;
 
-    /** @var array */
+    /** @var array<string, string> */
     private $attributeMapping;
 
     /** @var string */
@@ -41,13 +41,10 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
 
     public function fetchAttributesForUser(SymfonyUserInterface $user): array
     {
-        /** @var string $query */
+        /** @psalm-suppress DeprecatedMethod */
         $query = sprintf('uid=%s', $user->getUsername());
-
-        /** @var QueryInterface $search */
         $search = $this->ldap->query($this->dn, $query);
-
-        /** @var array<Entry> $entries */
+        /** @psalm-suppress PossiblyInvalidMethodCall */
         $entries = $search->execute()->toArray();
 
         /** @var array<string, mixed> $userAttributes */
@@ -67,7 +64,6 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
         ];
 
         if (count($entries) >= 1) {
-            /** @var Entry $entry */
             $entry = $entries[0];
 
             foreach ($this->attributeMapping as $userKey => $ldapKey) {
@@ -75,7 +71,7 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
 
                 if ($entry->hasAttribute($ldapKey)) {
                     /** @var array<string> $value */
-                    $value = array_values($entry->getAttribute($ldapKey));
+                    $value = array_values($entry->getAttribute($ldapKey) ?? []);
 
                     $userAttributes[$userKey] = $value[0];
                 }
@@ -100,6 +96,7 @@ final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
             return null;
         }
 
+        /** @psalm-suppress MixedArgument */
         $dateTime = DateTime::createFromFormat(DATE_ATOM, $value);
         if ($dateTime === false) {
             return null;
