@@ -17,6 +17,13 @@
         </service>
 
         <service
+            id="sylius_ldap.ldap.ldap_group_fetcher"
+            class="Brille24\SyliusLdapPlugin\Ldap\LdapGroupFetcher">
+            <argument type="service" id="Symfony\Component\Ldap\Ldap" />
+            <argument>%env(LDAP_GROUP_QUERY_DN)%</argument>
+        </service>
+
+        <service
             id="sylius_ldap.user_provider.ldap_as_admin_user"
             class="Brille24\SyliusLdapPlugin\User\SymfonyToSyliusUserProviderProxy"
         >

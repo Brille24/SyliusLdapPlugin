@@ -22,6 +22,7 @@ LDAP_QUERY_PARAMETER='uid'
 LDAP_QUERY_STRING='uid={username}'
 LDAP_LOOKUP_DN='cn=lookup-user,dc=example,dc=com'
 LDAP_USER_QUERY_DN='dc=example,dc=com'
+LDAP_GROUP_QUERY_DN='ou=groups,dc=example,dc=com'
 ###< sylius/ldap-plugin ###
 ```
 
