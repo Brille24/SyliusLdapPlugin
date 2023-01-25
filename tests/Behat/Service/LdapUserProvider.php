@@ -14,11 +14,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
 class LdapUserProvider implements UserProviderInterface
 {
     private const EMAILS = ['sylius@example.com', 'ted@example.com', 'watermelon@example.com'];
-    private UserRepositoryInterface $userRepository;
 
-    public function __construct(UserRepositoryInterface $userRepository)
+    public function __construct(private UserRepositoryInterface $userRepository)
     {
-        $this->userRepository = $userRepository;
     }
 
     public function refreshUser(UserInterface $user): UserInterface

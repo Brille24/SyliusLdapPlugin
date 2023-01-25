@@ -27,43 +27,14 @@ use Webmozart\Assert\Assert;
 
 final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterface
 {
-    /**
-     * @var SymfonyUserProviderInterface
-     */
-    private $ldapUserProvider;
-
-    /**
-     * @var AbstractUserProvider
-     */
-    private $adminUserProvider;
-
-    /**
-     * @var LdapAttributeFetcherInterface
-     */
-    private $attributeFetcher;
-
-    /**
-     * @var FactoryInterface
-     */
-    private $adminUserFactory;
-
-    /**
-     * @var UserSynchronizerInterface
-     */
-    private $userSynchronizer;
 
     public function __construct(
-        SymfonyUserProviderInterface $ldapUserProvider,
-        AbstractUserProvider $adminUserProvider,
-        LdapAttributeFetcherInterface $attributeFetcher,
-        FactoryInterface $adminUserFactory,
-        UserSynchronizerInterface $userSynchronizer
+       private SymfonyUserProviderInterface $ldapUserProvider,
+       private AbstractUserProvider $adminUserProvider,
+       private LdapAttributeFetcherInterface $attributeFetcher,
+       private FactoryInterface $adminUserFactory,
+       private UserSynchronizerInterface $userSynchronizer
     ) {
-        $this->ldapUserProvider = $ldapUserProvider;
-        $this->adminUserProvider = $adminUserProvider;
-        $this->attributeFetcher = $attributeFetcher;
-        $this->adminUserFactory = $adminUserFactory;
-        $this->userSynchronizer = $userSynchronizer;
     }
 
     /**

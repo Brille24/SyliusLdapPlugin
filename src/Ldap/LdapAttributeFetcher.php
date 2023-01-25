@@ -6,37 +6,22 @@ namespace Brille24\SyliusLdapPlugin\Ldap;
 
 use DateTime;
 use DateTimeInterface;
-use Symfony\Component\Ldap\Adapter\QueryInterface;
-use Symfony\Component\Ldap\Entry;
-use Symfony\Component\Ldap\Ldap;
 use Symfony\Component\Ldap\LdapInterface;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
 use Webmozart\Assert\Assert;
 
 final class LdapAttributeFetcher implements LdapAttributeFetcherInterface
 {
-    /** @var LdapInterface */
-    private $ldap;
-
-    /** @var array<string, string> */
-    private $attributeMapping;
-
-    /** @var string */
-    private $dn;
-
     /**
      * @param LdapInterface         $ldap
      * @param array<string, string> $attributeMapping
      * @param string                $dn
      */
     public function __construct(
-        LdapInterface $ldap,
-        array $attributeMapping = [],
-        string $dn = 'ou=users,dc=example,dc=com'
+        private LdapInterface $ldap,
+        private array $attributeMapping = [],
+        private string $dn = 'ou=users,dc=example,dc=com'
     ) {
-        $this->ldap = $ldap;
-        $this->attributeMapping = $attributeMapping;
-        $this->dn = $dn;
     }
 
     public function fetchAttributesForUser(SymfonyUserInterface $user): array

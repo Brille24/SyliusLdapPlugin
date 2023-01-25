@@ -10,14 +10,8 @@ use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 
 final class UserSynchronizer implements UserSynchronizerInterface
 {
-    /**
-     * @var PropertyAccessorInterface
-     */
-    private $propertyAccessor;
-
-    public function __construct(PropertyAccessorInterface $propertyAccessor)
+    public function __construct(private PropertyAccessorInterface $propertyAccessor)
     {
-        $this->propertyAccessor = $propertyAccessor;
     }
 
     public function synchroniseUsers(SyliusUserInterface $sourceUser, SyliusUserInterface $targetUser): void
