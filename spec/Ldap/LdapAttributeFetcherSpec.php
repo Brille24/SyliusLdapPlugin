@@ -8,6 +8,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
 use Sylius\Component\User\Model\UserInterface;
+use Symfony\Component\Ldap\Adapter\CollectionInterface;
+use Symfony\Component\Ldap\Adapter\ExtLdap\Collection;
 use Symfony\Component\Ldap\Adapter\QueryInterface;
 use Symfony\Component\Ldap\Entry;
 use Symfony\Component\Ldap\LdapInterface;
@@ -18,7 +20,7 @@ class LdapAttributeFetcherSpec extends ObjectBehavior
     {
         $this->beConstructedWith($ldap, ['username' => 'username', 'first_name' => 'fn', 'last_name' => 'ln']);
 
-        $user->getUsername()->willReturn('testUser');
+        $user->getUserIdentifier()->willReturn('testUser');
         $ldap->query('ou=users,dc=example,dc=com', 'uid=testUser')->willReturn($query);
     }
 
@@ -30,9 +32,14 @@ class LdapAttributeFetcherSpec extends ObjectBehavior
 
     function it_returns_the_default_values_if_the_ldap_user_is_not_found(
         UserInterface $user,
-        QueryInterface $query
+        QueryInterface $query,
+        CollectionInterface $collection
     ) {
-        $query->execute()->willReturn(new ArrayCollection([]));
+        $collection->toArray()->willReturn([]);
+        $collection->count()->willReturn(0);
+        $collection->offsetGet(0)->shouldNotBeCalled();
+
+        $query->execute()->willReturn($collection);
 
         $this->fetchAttributesForUser($user)->shouldReturn([
             'email'                 => null,
@@ -54,9 +61,14 @@ class LdapAttributeFetcherSpec extends ObjectBehavior
     function it_returns_the_mapped_data_from_ldap(
         UserInterface $user,
         QueryInterface $query,
-        Entry $entry
+        Entry $entry,
+        CollectionInterface $collection
     ) {
-        $query->execute()->willReturn(new ArrayCollection([$entry->getWrappedObject()]));
+        $collection->toArray()->willReturn([$entry]);
+        $collection->count()->willReturn(1);
+        $collection->offsetGet(0)->willReturn($entry);
+
+        $query->execute()->willReturn($collection);
 
         $entry->hasAttribute('username')->willReturn(true);
         $entry->getAttribute('username')->willReturn(['value' => 'test']);
