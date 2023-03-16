@@ -20,7 +20,7 @@ use Sylius\Component\Core\Model\AdminUserInterface;
 use Sylius\Component\Resource\Factory\FactoryInterface;
 use Sylius\Component\User\Model\UserInterface;
 use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
-use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
+use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface as SymfonyUserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface as SymfonyUserProviderInterface;
 use Webmozart\Assert\Assert;
@@ -28,6 +28,7 @@ use Webmozart\Assert\Assert;
 final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterface
 {
 
+    /** @param FactoryInterface<AdminUserInterface> $adminUserFactory */
     public function __construct(
        private SymfonyUserProviderInterface $ldapUserProvider,
        private AbstractUserProvider $adminUserProvider,
@@ -37,20 +38,16 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
     ) {
     }
 
-    /**
-     * @param string $username
-     *
-     * @psalm-suppress DeprecatedMethod
-     */
-    public function loadUserByUsername($username): SymfonyUserInterface
+    public function loadUserByIdentifier(string $identifier): SymfonyUserInterface
     {
-        $symfonyLdapUser = $this->ldapUserProvider->loadUserByUsername($username);
+        $symfonyLdapUser = $this->ldapUserProvider->loadUserByIdentifier($identifier);
+        /** @var SyliusUserInterface&SymfonyUserInterface $syliusLdapUser */
         $syliusLdapUser = $this->convertSymfonyToSyliusUser($symfonyLdapUser);
 
         try {
-            /** @var SyliusUserInterface $syliusUser */
-            $syliusUser = $this->adminUserProvider->loadUserByUsername($username);
-        } catch (UsernameNotFoundException $notFoundException) {
+            /** @var SyliusUserInterface&SymfonyUserInterface $syliusUser */
+            $syliusUser = $this->adminUserProvider->loadUserByIdentifier($identifier);
+        } catch (UserNotFoundException) {
             return $syliusLdapUser;
         }
 
@@ -91,8 +88,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         $locked = $this->attributeFetcher->toBool($ldapAttributes['locked']);
         /** @var UserInterface $syliusUser */
         $syliusUser = $this->adminUserFactory->createNew();
-        /** @psalm-suppress DeprecatedMethod */
-        $syliusUser->setUsername($symfonyUser->getUsername());
+        $syliusUser->setUsername($symfonyUser->getUserIdentifier());
         $syliusUser->setEmail($ldapAttributes['email']);
         $syliusUser->setPassword('');
         $syliusUser->setLocked($locked);
@@ -112,4 +108,11 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
         return $syliusUser;
     }
 
+    /** @param mixed $username */
+    public function loadUserByUsername($username): SymfonyUserInterface
+    {
+        Assert::string($username);
+
+        return $this->loadUserByIdentifier($username);
+    }
 }

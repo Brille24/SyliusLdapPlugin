@@ -16,7 +16,7 @@ use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProvide
 use Sylius\Component\Core\Model\AdminUser;
 use Sylius\Component\User\Model\UserInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
-use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
+use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use PhpSpec\ObjectBehavior;
 
@@ -46,10 +46,12 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
         AdminUserInterface $adminUser,
         UserInterface $ldapUser
     ) {
-        $adminUserProvider->loadUserByUsername('test')->willThrow(UsernameNotFoundException::class);
+        $adminUserProvider->loadUserByIdentifier('test')->willThrow(UserNotFoundException::class);
 
-        $innerUserProvider->loadUserByUsername('test')->willReturn($ldapUser);
+        $innerUserProvider->loadUserByIdentifier('test')->willReturn($ldapUser);
         $adminUserFactory->createNew()->shouldBeCalled()->willReturn($adminUser);
+
+        $ldapUser->getUserIdentifier()->willReturn('test');
 
         $attributeFetcher->fetchAttributesForUser($ldapUser)->willReturn([
             'email'                 => 'sylius@sylius.de',
@@ -87,9 +89,11 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
         UserInterface $ldapUser,
         UserSynchronizerInterface $userSynchronizer
     ) {
-        $adminUserProvider->loadUserByUsername('test')->willReturn($syliusUser);
-        $innerUserProvider->loadUserByUsername('test')->willReturn($ldapUser);
+        $adminUserProvider->loadUserByIdentifier('test')->willReturn($syliusUser);
+        $innerUserProvider->loadUserByIdentifier('test')->willReturn($ldapUser);
         $adminUserFactory->createNew()->shouldBeCalled()->willReturn($adminUser);
+
+        $ldapUser->getUserIdentifier()->willReturn('test');
 
         $attributeFetcher->fetchAttributesForUser($ldapUser)->willReturn([
             'email'                 => 'sylius@sylius.de',

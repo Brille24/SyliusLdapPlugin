@@ -1,0 +1,20 @@
+<div class="ui one column grid">
+    <div class="column">
+        {% include '@SyliusAdmin/Order/History/_addresses.html.twig' %}
+    </div>
+    <div class="column">
+        {% include '@Brille24SyliusLdapPlugin/Order/History/_order.html.twig' %}
+    </div>
+    <div class="column">
+        <div class="ui segment">
+            <div class="ui two column stackable grid">
+                <div class="column">
+                    {% include '@Brille24SyliusLdapPlugin/Order/History/_payment.html.twig' %}
+                </div>
+                <div class="column">
+                    {% include '@Brille24SyliusLdapPlugin/Order/History/_shipment.html.twig' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

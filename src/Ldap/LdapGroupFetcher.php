@@ -17,12 +17,14 @@ final class LdapGroupFetcher implements LdapGroupFetcherInterface
     ) {}
 
     /**
-    * @param string $memberUid The memberUid property in the LDAP. Usually the username of the user
-    * @return array<string>
+     * @psalm-suppress MixedReturnTypeCoercion
+     *
+     * @param string $memberUid The memberUid property in the LDAP. Usually the username of the user
+     *
+     * @return array<string>
     */
     public function fetchGroups(string $memberUid, string $prefix = ''): array
     {
-        /** @var array<Entry> $entries */
         $entries = $this->ldap
             ->query($this->dn, 'memberUid='.$memberUid)
             ->execute()
@@ -33,10 +35,13 @@ final class LdapGroupFetcher implements LdapGroupFetcherInterface
         return array_reduce(
             $entries,
             function (array $accumulator, Entry $entry) use ($prefix): array {
-                Assert::isArray($entry->getAttribute('cn'));
-                $groupName = $entry->getAttribute('cn')[0];
+                $attribute = $entry->getAttribute('cn');
+                Assert::isArray($attribute);
 
-                if ($this->stripPrefix && strpos($groupName, $prefix) === 0) {
+                $groupName = $attribute[0];
+                Assert::string($groupName);
+
+                if ($this->stripPrefix && str_starts_with($groupName, $prefix)) {
                     $accumulator[] = substr($groupName, strlen($prefix));
                 }
 

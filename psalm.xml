@@ -11,6 +11,12 @@
         <ignoreFiles>
             <directory name="vendor" />
             <directory name="tests/Behat"/>
+            <file name="src/DependencyInjection/Configuration.php" />
+            <file name="src/DependencyInjection/Brille24SyliusLdapExtension.php"/>
         </ignoreFiles>
     </projectFiles>
+
+    <issueHandlers>
+        <PropertyNotSetInConstructor errorLevel="info" />
+    </issueHandlers>
 </psalm>
