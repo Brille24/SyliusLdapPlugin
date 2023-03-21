@@ -46,7 +46,7 @@ final class SymfonyToSyliusUserProviderProxy implements SyliusUserProviderInterf
 
         try {
             /** @var SyliusUserInterface&SymfonyUserInterface $syliusUser */
-            $syliusUser = $this->adminUserProvider->loadUserByIdentifier($identifier);
+            $syliusUser = $this->adminUserProvider->loadUserByUsername($identifier);
         } catch (UserNotFoundException) {
             return $syliusLdapUser;
         }
