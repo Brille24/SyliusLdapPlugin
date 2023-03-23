@@ -6,16 +6,13 @@ use Brille24\SyliusLdapPlugin\Ldap\LdapAttributeFetcherInterface;
 use Brille24\SyliusLdapPlugin\User\SymfonyToSyliusUserProviderProxy;
 use Brille24\SyliusLdapPlugin\User\UserSynchronizerInterface;
 use DateTime;
-use PhpParser\Node\Arg;
 use Prophecy\Argument;
 use Sylius\Bundle\UserBundle\Provider\AbstractUserProvider;
 use Sylius\Component\Core\Model\AdminUserInterface;
 use Sylius\Component\Resource\Factory\FactoryInterface;
 use Sylius\Component\User\Model\UserInterface as SyliusUserInterface;
 use Sylius\Bundle\UserBundle\Provider\UserProviderInterface as SyliusUserProviderInterface;
-use Sylius\Component\Core\Model\AdminUser;
 use Sylius\Component\User\Model\UserInterface;
-use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use PhpSpec\ObjectBehavior;
@@ -46,7 +43,7 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
         AdminUserInterface $adminUser,
         UserInterface $ldapUser
     ) {
-        $adminUserProvider->loadUserByIdentifier('test')->willThrow(UserNotFoundException::class);
+        $adminUserProvider->loadUserByUsername('test')->willThrow(UserNotFoundException::class);
 
         $innerUserProvider->loadUserByIdentifier('test')->willReturn($ldapUser);
         $adminUserFactory->createNew()->shouldBeCalled()->willReturn($adminUser);
@@ -89,7 +86,7 @@ class SymfonyToSyliusUserProviderProxySpec extends ObjectBehavior
         UserInterface $ldapUser,
         UserSynchronizerInterface $userSynchronizer
     ) {
-        $adminUserProvider->loadUserByIdentifier('test')->willReturn($syliusUser);
+        $adminUserProvider->loadUserByUsername('test')->willReturn($syliusUser);
         $innerUserProvider->loadUserByIdentifier('test')->willReturn($ldapUser);
         $adminUserFactory->createNew()->shouldBeCalled()->willReturn($adminUser);
 
