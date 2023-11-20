@@ -47,6 +47,7 @@
 
         <service id="Symfony\Component\Ldap\Ldap">
             <argument type="service" id="Symfony\Component\Ldap\Adapter\ExtLdap\Adapter"/>
+            <tag name="ldap"/>
         </service>
 
         <service id="Symfony\Component\Ldap\Adapter\ExtLdap\Adapter">
